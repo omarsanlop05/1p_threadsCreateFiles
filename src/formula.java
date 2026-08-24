@@ -1,50 +1,138 @@
-import java.io.File;       // Import the File class
-import java.io.IOException; // Import IOException to handle errors
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
+import java.util.concurrent.ThreadLocalRandom;
 
-public class formula {
+/**
+ * P = (C + H) * A   donde C, H, A son aleatorios de 1 a 100.
+ *
+ * Cada hilo:
+ *   - crea su propio archivo
+ *   - escribe m mensajes  (m aleatorio entre 1 y M)
+ *   - duerme t milisegundos entre mensaje y mensaje (t aleatorio entre 10 y T)
+ */
+public class formula implements Runnable {
 
-    //P = (C+H) * A
-    //C, H, A must be random from 1 to 100
-    private int c;
-    private int h;
-    private int a;
+    private final int id;
+    private final int maxMensajes;   // M
+    private final int maxDormir;     // T
 
-    private int M;
-    private int T;
+    private File archivo;
+    private BufferedWriter escritor;
 
-    public formula (int M, int T){
-        this.T = T;
-        this.M = M;
+    public formula(int id, int maxMensajes, int maxDormir) {
+        this.id = id;
+        this.maxMensajes = maxMensajes;
+        this.maxDormir = maxDormir;
     }
 
-    //must create te formula m times, and sleep t times
-    //m is random from 1 to M (maximum times)
-    //t is random from 10 to T (maximum sleep)
-
-    public int calculateP(){
-        return ((this.c + this.h) * this.);
+    /** Aleatorio entre min y max, ambos incluidos. */
+    private static int rand(int min, int max) {
+        return ThreadLocalRandom.current().nextInt(min, max + 1);
     }
 
-
-    public void createFile{
-        File myObj = new File("filename.txt"); // Create File object
+    private int calculateP(int c, int h, int a) {
+        return (c + h) * a;
     }
-}
 
+    /** Crea el archivo del hilo y abre el escritor. */
+    private void createFile() throws IOException {
+        this.archivo = new File("formula_" + id + "_" + rand(1, 10000) + ".txt");
+        this.archivo.createNewFile();
+        this.escritor = new BufferedWriter(new FileWriter(archivo));
+    }
 
+    /** Escribe una línea en el archivo del hilo. */
+    private void write(String mensaje) throws IOException {
+        escritor.write(mensaje);
+        escritor.newLine();
+        escritor.flush();   // para poder ver el archivo mientras corre
+    }
 
-public class CreateFile {
-    public static void main(String[] args) {
+    @Override
+    public void run() {
         try {
-            File myObj = new File("filename.txt"); // Create File object
-            if (myObj.createNewFile()) {           // Try to create the file
-                System.out.println("File created: " + myObj.getName());
-            } else {
-                System.out.println("File already exists.");
+            createFile();
+
+            int m = rand(1, maxMensajes);
+            write("=== Hilo " + id + " | " + m + " mensajes ===");
+
+            for (int i = 1; i <= m; i++) {
+                int c = rand(1, 100);
+                int h = rand(1, 100);
+                int a = rand(1, 100);
+                int p = calculateP(c, h, a);
+
+                write(String.format("[%d/%d] P = (%d + %d) * %d = %d", i, m, c, h, a, p));
+
+                int t = rand(10, maxDormir);
+                Thread.sleep(t);
             }
+
+            System.out.println("Hilo " + id + " terminó -> " + archivo.getName());
+
         } catch (IOException e) {
-            System.out.println("An error occurred.");
-            e.printStackTrace(); // Print error details
+            System.err.println("Hilo " + id + " error de E/S: " + e.getMessage());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();   // buena práctica: restaurar la bandera
+            System.err.println("Hilo " + id + " interrumpido");
+        } finally {
+            cerrar();
+        }
+    }
+
+    private void cerrar() {
+        if (escritor != null) {
+            try {
+                escritor.close();
+            } catch (IOException ignored) {
+                // nada que hacer al cerrar
+            }
+        }
+    }
+
+    // ---------------------------------------------------------------
+
+    public static void main(String[] args) throws InterruptedException {
+        Scanner sc = new Scanner(System.in);
+
+        int n = pedir(sc, "¿Cuántos threads? ", 1);
+        int m = pedir(sc, "¿Cuántos mensajes máximo? ", 1);
+        int t = pedir(sc, "¿Cuánto tiempo dormir máximo (ms)? ", 10);
+
+        List<Thread> hilos = new ArrayList<>();
+        for (int i = 1; i <= n; i++) {
+            Thread hilo = new Thread(new formula(i, m, t), "formula-" + i);
+            hilos.add(hilo);
+            hilo.start();
+        }
+
+        for (Thread hilo : hilos) {
+            hilo.join();   // esperar a que todos terminen
+        }
+
+        System.out.println("Listo: " + n + " archivos generados.");
+        sc.close();
+    }
+
+    /** Lee un entero válido y mayor o igual al mínimo. */
+    private static int pedir(Scanner sc, String texto, int minimo) {
+        while (true) {
+            System.out.print(texto);
+            if (sc.hasNextInt()) {
+                int valor = sc.nextInt();
+                if (valor >= minimo) {
+                    return valor;
+                }
+                System.out.println("Tiene que ser >= " + minimo);
+            } else {
+                System.out.println("Eso no es un número.");
+                sc.next();
+            }
         }
     }
 }
