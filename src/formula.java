@@ -20,6 +20,7 @@ public class Formula implements Runnable {
     private final int id;
     private final int maxMensajes;   // M
     private final int maxDormir;     // T
+    public double P = 0;
 
     private File archivo;
     private BufferedWriter escritor;
@@ -66,6 +67,7 @@ public class Formula implements Runnable {
                 int h = rand(1, 100);
                 int a = rand(1, 100);
                 int p = calculateP(c, h, a);
+                this.P += p;
 
                 write(String.format("[%d/%d] P = (%d + %d) * %d = %d", i, m, c, h, a, p));
 
@@ -73,7 +75,21 @@ public class Formula implements Runnable {
                 Thread.sleep(t);
             }
 
+            double averageP = this.P/m;
+            String apreciacion;
+
             System.out.println("Hilo " + id + " terminó -> " + archivo.getName());
+            System.out.println("Promedio de P: " + averageP);
+
+            if(averageP < 5000){
+                apreciacion = "mala";
+            } else if(averageP > 15000){
+                apreciacion = "buena";
+            } else{
+                apreciacion = "promedio";
+            }
+
+            System.out.println("Apreciación: " + apreciacion + ".");
 
         } catch (IOException e) {
             System.err.println("Hilo " + id + " error de E/S: " + e.getMessage());
@@ -110,6 +126,9 @@ public class Formula implements Runnable {
             hilos.add(hilo);
             hilo.start();
         }
+
+        Watcher w = new Watcher(hilos);
+        w.start();
 
         for (Thread hilo : hilos) {
             hilo.join();   // esperar a que todos terminen
