@@ -76,7 +76,7 @@ public class Formula implements Runnable {
             }
 
             double averageP = this.P/m;
-            String apreciacion;
+            String apreciacion; 
 
             System.out.println("Hilo " + id + " terminó -> " + archivo.getName());
             System.out.println("Promedio de P: " + averageP);
