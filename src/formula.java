@@ -15,7 +15,7 @@ import java.util.concurrent.ThreadLocalRandom;
  *   - escribe m mensajes  (m aleatorio entre 1 y M)
  *   - duerme t milisegundos entre mensaje y mensaje (t aleatorio entre 10 y T)
  */
-public class formula implements Runnable {
+public class Formula implements Runnable {
 
     private final int id;
     private final int maxMensajes;   // M
@@ -24,7 +24,7 @@ public class formula implements Runnable {
     private File archivo;
     private BufferedWriter escritor;
 
-    public formula(int id, int maxMensajes, int maxDormir) {
+    public Formula(int id, int maxMensajes, int maxDormir) {
         this.id = id;
         this.maxMensajes = maxMensajes;
         this.maxDormir = maxDormir;
@@ -106,7 +106,7 @@ public class formula implements Runnable {
 
         List<Thread> hilos = new ArrayList<>();
         for (int i = 1; i <= n; i++) {
-            Thread hilo = new Thread(new formula(i, m, t), "formula-" + i);
+            Thread hilo = new Thread(new Formula(i, m, t), "formula-" + i);
             hilos.add(hilo);
             hilo.start();
         }
